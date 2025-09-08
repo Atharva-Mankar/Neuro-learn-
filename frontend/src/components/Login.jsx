@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { demoAuth } from '../utils/demoAuth';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -9,6 +12,7 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,18 +21,18 @@ export default function Login() {
 
     try {
       if (activeTab === 'login') {
-        // Login
-        const response = await api.login({ email, password });
-        localStorage.setItem('token', response.access_token);
-        setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
-        
-        // Redirect to dashboard after successful login
-        setTimeout(() => {
-          // You can redirect to a dashboard page here
-          console.log('User logged in:', response);
-        }, 1500);
+        // Demo Login
+        const result = await demoAuth.demoLogin(email, password);
+        if (result.success) {
+          setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1500);
+        } else {
+          setMessage({ type: 'error', text: result.error });
+        }
       } else {
-        // Registration
+        // Registration (keep using the original API for now)
         const response = await api.register({ 
           email, 
           username, 
@@ -64,6 +68,70 @@ export default function Login() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     clearForm();
+  };
+
+  // Demo authentication handlers
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setMessage({ type: 'error', text: 'Please enter your email address first' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await demoAuth.demoForgotPassword(email);
+      if (result.success) {
+        setMessage({ 
+          type: 'success', 
+          text: `Demo: Password reset link generated! You can copy this link: ${result.resetLink}` 
+        });
+        setShowForgotPassword(true);
+      } else {
+        setMessage({ type: 'error', text: result.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to generate reset link' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const result = await demoAuth.demoGoogleLogin();
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Google login successful! Redirecting...' });
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        setMessage({ type: 'error', text: result.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Google login failed' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTwitterLogin = async () => {
+    setLoading(true);
+    try {
+      const result = await demoAuth.demoTwitterLogin();
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Twitter login successful! Redirecting...' });
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        setMessage({ type: 'error', text: result.error });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Twitter login failed' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -194,9 +262,14 @@ export default function Login() {
 
             {activeTab === 'login' && (
               <div className="text-right">
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 disabled:opacity-50"
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
             )}
 
@@ -223,14 +296,22 @@ export default function Login() {
 
           {/* Social login buttons */}
           <div className="flex space-x-3">
-            <button className="flex-1 flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+            <button
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <div className="w-6 h-6 bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 rounded flex items-center justify-center text-white font-bold text-sm">
                 G
               </div>
               <span className="ml-2 text-gray-700 font-medium">Google</span>
             </button>
             
-            <button className="flex-1 flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+            <button
+              onClick={handleTwitterLogin}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
