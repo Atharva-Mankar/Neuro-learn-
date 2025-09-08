@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { api } from '../services/api';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -11,24 +13,20 @@ export default function Login() {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent form reload
     setLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
       if (activeTab === 'login') {
-        // Login
         const response = await api.login({ email, password });
         localStorage.setItem('token', response.access_token);
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('email', email); // Save email to localStorage
         setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
-        
-        // Redirect to dashboard after successful login
-        setTimeout(() => {
-          // You can redirect to a dashboard page here
-          console.log('User logged in:', response);
-        }, 1500);
+        navigate('/dashboard'); // Redirect after login success
       } else {
-        // Registration
+        
         const response = await api.register({ 
           email, 
           username, 
@@ -47,7 +45,7 @@ export default function Login() {
         }, 2000);
       }
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: error.message || 'Login failed.' });
     } finally {
       setLoading(false);
     }
