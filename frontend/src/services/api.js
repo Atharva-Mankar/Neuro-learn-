@@ -1,60 +1,55 @@
-const API_BASE_URL = 'http://localhost:8000';
+// ✅ Correct API URL - must match your backend terminal output
+const API_URL = "http://127.0.0.1:8000"; // ensure this matches backend
+
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    let errorDetail = `Request failed with status ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || JSON.stringify(errorData);
+    } catch (e) {
+      // The response was not JSON, which can happen with CORS errors or server misconfigurations
+      errorDetail = `Request failed with status ${response.status}. Could not parse error response.`;
+    }
+    throw new Error(errorDetail);
+  }
+  return response.json();
+};
 
 export const api = {
-  // User registration
-  async register(userData) {
-    const response = await fetch(`${API_BASE_URL}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  // ---------- Register ----------
+  register: async (userData) => {
+    const response = await fetch(`${API_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Registration failed');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
-  // User login
-  async login(credentials) {
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
+  // ---------- Login ----------
+  login: async (userData) => {
+    const response = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
     });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Login failed');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
 
-  // Get current user profile
-  async getCurrentUser(token) {
-    const response = await fetch(`${API_BASE_URL}/users/me`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to get user profile');
-    }
-    
-    return response.json();
-  },
+  // ---------- Current User ----------
+  getCurrentUser: async (token) => {
+    try {
+      const response = await fetch(`${API_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-  // Health check
-  async healthCheck() {
-    const response = await fetch(`${API_BASE_URL}/health`);
-    return response.json();
-  }
+      return await handleResponse(response);
+    } catch (err) {
+      console.error("Get Current User API Error:", err);
+      throw err;
+    }
+  },
 };
